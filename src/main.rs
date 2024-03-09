@@ -1,5 +1,11 @@
+use std::thread;
+use std::time;
+
 const ROWS: usize = 10;
 const COLS: usize = 20;
+const ALIVE_SYMBOL: char = '@';
+const DEAD_SYMBOL: char = '.';
+const DELAY: time::Duration = time::Duration::from_millis(500);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Cell {
@@ -19,11 +25,12 @@ impl Field {
     }
 
     fn display(&self) {
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         for row in &self.cells {
             for &cell in row {
                 match cell {
-                    Cell::Dead => print!("."),
-                    Cell::Alive => print!("#"),
+                    Cell::Dead => print!("{}", DEAD_SYMBOL),
+                    Cell::Alive => print!("{}", ALIVE_SYMBOL),
                 }
             }
             println!();
@@ -79,13 +86,26 @@ impl Field {
             }
         }
 
-        count
+        return count;
+    }
+
+    fn set_glider(&mut self) {
+        self.cells[3][3] = Cell::Alive;
+        self.cells[4][4] = Cell::Alive;
+        self.cells[4][5] = Cell::Alive;
+        self.cells[3][5] = Cell::Alive;
+        self.cells[2][5] = Cell::Alive;
     }
 }
 
 fn main() {
     let mut field = Field::new();
 
-    field.display();
-    field.next_generation();
+    field.set_glider();
+
+    loop {
+        field.display();
+        field.next_generation();
+        thread::sleep(DELAY);
+    }
 }
