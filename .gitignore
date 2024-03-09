@@ -1,0 +1,5 @@
+# Ignore target folder with output files
+target/
+
+# Ignore IDE-generated folders
+.idea/
