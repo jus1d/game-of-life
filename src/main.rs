@@ -1,50 +1,53 @@
 use std::thread;
 use std::time;
 
-const ROWS: usize = 10;
-const COLS: usize = 20;
-const ALIVE_SYMBOL: char = '@';
-const DEAD_SYMBOL: char = '.';
-const DELAY: time::Duration = time::Duration::from_millis(500);
+const DEAD_CHAR: char = '.';
+const ALIVE_CHAR: char = '@';
+const DELAY_MS: u64 = 100;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 enum Cell {
     Dead,
-    Alive,
+    Alive
 }
 
 struct Field {
-    cells: [[Cell; COLS]; ROWS]
+    cells: Vec<Vec<Cell>>,
+    rows: usize,
+    cols: usize,
 }
 
 impl Field {
-    fn new() -> Self {
+    fn new(rows: usize, cols: usize) -> Self {
+        let cells = vec![vec![Cell::Dead; cols]; rows];
         Field {
-            cells: [[Cell::Dead; COLS]; ROWS],
+            cells,
+            rows,
+            cols,
         }
     }
 
     fn display(&self) {
         print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-        for row in &self.cells {
-            for &cell in row {
-                match cell {
-                    Cell::Dead => print!("{}", DEAD_SYMBOL),
-                    Cell::Alive => print!("{}", ALIVE_SYMBOL),
+        for row in 0..self.rows {
+            for col in 0..self.cols {
+                match self.cells[row][col] {
+                    Cell::Dead => print!("{}", DEAD_CHAR),
+                    Cell::Alive => print!("{}", ALIVE_CHAR),
                 }
             }
             println!();
         }
     }
 
-    fn next_generation(&mut self) {
-        let mut next_state = [[Cell::Dead; COLS]; ROWS];
+    fn next(&mut self) {
+        let mut next_state = vec![vec![Cell::Dead; self.cols]; self.rows];
 
-        for row in 0..ROWS {
-            for col in 0..COLS {
+        for row in 0..self.rows {
+            for col in 0..self.cols {
                 let neighbors = self.count_alive_neighbors(row, col);
-
                 let mut cell = self.cells[row][col];
+
                 match cell {
                     Cell::Dead => {
                         if neighbors == 3 {
@@ -60,6 +63,7 @@ impl Field {
                 next_state[row][col] = cell;
             }
         }
+
         self.cells = next_state;
     }
 
@@ -75,7 +79,7 @@ impl Field {
                 let neighbor_row = row as isize + d_row;
                 let neighbor_col = col as isize + d_col;
 
-                if neighbor_row >= 0 && neighbor_row < ROWS as isize && neighbor_col >= 0 && neighbor_col < COLS as isize {
+                if neighbor_row >= 0 && neighbor_row < self.rows as isize && neighbor_col >= 0 && neighbor_col < self.cols as isize {
                     let neighbor_row = neighbor_row as usize;
                     let neighbor_col = neighbor_col as usize;
 
@@ -99,13 +103,12 @@ impl Field {
 }
 
 fn main() {
-    let mut field = Field::new();
-
+    let mut field = Field::new(20, 40);
     field.set_glider();
 
     loop {
+        field.next();
         field.display();
-        field.next_generation();
-        thread::sleep(DELAY);
+        thread::sleep(time::Duration::from_millis(DELAY_MS));
     }
 }
